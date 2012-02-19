@@ -1,0 +1,13 @@
+application: bluecarton
+version: 1
+runtime: python
+api_version: 1
+
+handlers:
+- url: /canvas/layout
+  static_dir: canvas/layout
+- url: /canvas.*
+  script: canvas/canvas.py
+- url: /crossdomain.xml
+  static_files: crossdomain.xml
+  upload: crossdomain.xml
