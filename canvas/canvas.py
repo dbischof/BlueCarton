@@ -46,7 +46,7 @@ class CanvasWS(webapp.RequestHandler):
         if square.updateKey > maxKey:
           maxKey = square.updateKey
       
-      memcache.add("square", squares, DATA_CACHE_AGE)
+      memcache.add("squares", squares, DATA_CACHE_AGE)
       memcache.add("maxKey", maxKey, MAX_KEY_CACHE_AGE)
     
     # Update value
