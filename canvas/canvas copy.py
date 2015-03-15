@@ -26,28 +26,28 @@ class CanvasWS(webapp.RequestHandler):
   def get(self):
     self.response.headers['Content-Type'] = 'text/xml'
     self.response.out.write('<?xml version="1.0"?>')
-
-    squares = memcache.get("squares")
-    if squares:
-      # cache hit
-      maxKey = memcache.get("maxKey")
-      if not maxKey:
-        # cache miss
-        squares = None
     
-    if not squares:
-      #cache miss
-      squares = defaultdict(int)
-      maxKey = 0
-      
-      storedSquares = CanvasSquare.all()
-      for square in storedSquares:
-        squares[square.id] = square.color
-        if square.updateKey > maxKey:
-          maxKey = square.updateKey
-      
-      memcache.add("squares", squares, DATA_CACHE_AGE)
+    # Get max key
+    maxKey = memcache.get("maxKey")
+    
+    #temp
+    if maxKey:
+	  self.response.out.write('<!-- before: %i -->' % maxKey)
+	
+    if maxKey is None:
+      squares = CanvasSquare.all().order('-updateKey')
+      squares = squares.fetch(1)
+      if len(squares) is 1:
+        maxKey = squares[0].updateKey
+      else:
+        maxKey = 0
       memcache.add("maxKey", maxKey, MAX_KEY_CACHE_AGE)
+    
+    # temp
+    if maxKey:
+	  self.response.out.write('<!-- after: %i -->' % maxKey)
+    
+    
     
     # Update value
     id = self.request.get('id')
@@ -55,10 +55,15 @@ class CanvasWS(webapp.RequestHandler):
       id = int(id)
       color = int(self.request.get('color'))
       
-      key = "square_%i" % id
+      #squares = CanvasSquare.all().filter('id =', id)
+      #square = squares.get()
       
-      squares[id] = color
-      memcache.set("squares", squares, DATA_CACHE_AGE)
+      key = "square_%i" % id
+      #square = CanvasSquare.get_by_key_name(key)
+      #if square is None:
+      #  square = CanvasSquare(key_name=key, id=id)
+      #
+      #square.color = color
       
       # Don't waste a datastore read, just override it
       square = CanvasSquare(key_name=key, id=id, color=color)
@@ -74,7 +79,7 @@ class CanvasWS(webapp.RequestHandler):
         for square in squares:
           square.updateKey = newMaxKey
           square.put()
-      
+            
       self.response.out.write('<success/>')
       memcache.set("maxKey", newMaxKey, MAX_KEY_CACHE_AGE)
     
@@ -83,12 +88,22 @@ class CanvasWS(webapp.RequestHandler):
       self.response.out.write('<squares key="%s">' % maxKey)
       
       updateKey = self.request.get('key')
-      if updateKey is '' or int(updateKey) != maxKey:
-        #todo: filter by updateKey; might not be needed as bandwidth use looks ok
-
-        for id, color in squares.items():
-          self.response.out.write('<square id="%s" color="%s"/>' % (id, color))
+      if updateKey is '' or int(updateKey) is not maxKey:
       
+        squaresCache = defaultdict(int)
+        
+        squares = CanvasSquare.all()
+        if updateKey is not '':
+          squares.filter('updateKey >', int(updateKey))
+      
+        for square in squares:
+          self.response.out.write('<square id="%s" color="%s"/>' % (square.id, square.color))
+          #self.response.out.write('<square id="%s" color="%s" key="%s"/>' % (square.id, square.color, square.updateKey))
+          
+          squaresCache[square.id] = square.color
+        
+        memcache.add("squares", squaresCache, DATA_CACHE_AGE)
+    
       self.response.out.write('</squares>')
 
 
