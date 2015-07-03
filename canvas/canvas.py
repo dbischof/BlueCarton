@@ -1,14 +1,14 @@
 from collections import defaultdict
 from google.appengine.api import memcache
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext import db
+
+import webapp2
 
 MAX_KEY_CACHE_AGE = 60 * 5
 DATA_CACHE_AGE = 60 * 60
 
 # Community Canvas main page
-class CanvasMP(webapp.RequestHandler):
+class CanvasMP(webapp2.RequestHandler):
   def get(self):
     import os                                 # Lazy-load only when needed
     from google.appengine.ext.webapp import template
@@ -22,7 +22,7 @@ class CanvasMP(webapp.RequestHandler):
     
 
 # Community Canvas Web Service
-class CanvasWS(webapp.RequestHandler):
+class CanvasWS(webapp2.RequestHandler):
   def get(self):
     self.response.headers['Content-Type'] = 'text/xml'
     self.response.out.write('<?xml version="1.0"?>')
@@ -99,13 +99,9 @@ class CanvasSquare(db.Model):
   updateKey = db.IntegerProperty(required=True, default=1)
 
 
-def main():
-  application = webapp.WSGIApplication(
-                                       [('/canvas', CanvasMP),
-                                        ('/canvas/', CanvasMP),
-                                        ('/canvas/ws', CanvasWS)],
-                                       debug=False)
-  run_wsgi_app(application)
-
-if __name__ == "__main__":
-  main()
+app = webapp2.WSGIApplication(
+                              [('/canvas', CanvasMP),
+                               ('/canvas/', CanvasMP),
+                               ('/canvas/ws', CanvasWS)],
+                              debug=False
+                             )

@@ -1,11 +1,12 @@
-application: bluecarton
-version: 2
-runtime: python
+application: bluecarton-hrd
+version: 3
+runtime: python27
 api_version: 1
+threadsafe: false
 
 handlers:
 - url: /canvas.*
-  script: canvas/canvas.py
+  script: canvas.canvas.app
 - url: /crossdomain.xml
   static_files: crossdomain.xml
   upload: crossdomain.xml
